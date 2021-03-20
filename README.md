@@ -1,7 +1,7 @@
 # Big-bouncer
 Authentication Microservice written in .NET Core
 
-Nuget Packages needed:
+Nuget Packages Used:
 - Microsoft.EntityFrameworkCore
 - Microsoft.EntityFrameworkCore.Tools
 - Microsoft.EntityFrameworkCore.SqlServer
