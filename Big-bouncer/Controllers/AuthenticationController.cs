@@ -6,10 +6,12 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 
 namespace Big_bouncer.Controllers
 {
@@ -17,15 +19,13 @@ namespace Big_bouncer.Controllers
     [ApiController]
     public class AuthenticationController : ControllerBase
     {
-        private readonly ApplicationDbContext _context;
         private readonly ITokenBuilder _tokenBuilder;
+        private readonly UserRepository _userRepository;
 
-        public AuthenticationController(
-            ApplicationDbContext context,
-            ITokenBuilder tokenBuilder)
+        public AuthenticationController(ITokenBuilder tokenBuilder, UserRepository userRepository)
         {
-            _context = context;
             _tokenBuilder = tokenBuilder;
+            _userRepository = userRepository;
         }
 
         [HttpPost("Login")]
@@ -33,9 +33,7 @@ namespace Big_bouncer.Controllers
         {
             try
             {
-                var dbUser = await _context
-            .Users
-            .SingleOrDefaultAsync(u => u.Username == user.Username);
+                var dbUser = await _userRepository.GetUserAsync(user.Username);
 
                 if (dbUser == null)
                 {
@@ -59,22 +57,48 @@ namespace Big_bouncer.Controllers
             }
         }
 
+        [HttpPost("SignIn")]
+        public async Task<IActionResult> SignIn([FromBody] User user)
+        {
+            try
+            {
+                var dbUser = await _userRepository.GetUserAsync(user.Username);
+
+                if(dbUser != null)
+                {
+                    return Problem("User with this username already present", null, 501, null, null);
+                }
+
+                EntityEntry<User> userInserted = await _userRepository.AddUserAsync(user);
+
+                if(userInserted == null)
+                {
+                    return Problem("An error occured while try to Sign In...");
+                }
+                _userRepository.Save();
+                return Ok(JsonConvert.SerializeObject(user));
+
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message + "  " + ex.StackTrace);
+            }
+        }
+
         [HttpGet("VerifyToken")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         public async Task<IActionResult> VerifyToken()
         {
-            var username = User
+            var userClaim = User
                 .Claims
                 .SingleOrDefault();
 
-            if (username == null)
+            if (userClaim == null)
             {
                 return Unauthorized();
             }
 
-            var userExists = await _context
-                .Users
-                .AnyAsync(u => u.Username == username.Value);
+            var userExists = await _userRepository.VerifyUserExistance(userClaim);
 
             if (!userExists)
             {

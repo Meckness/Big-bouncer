@@ -59,6 +59,7 @@ namespace Big_bouncer
             });
 
             services.AddScoped<ITokenBuilder, TokenBuilder>();
+            services.AddScoped<UserRepository, UserRepository>();
             services.AddControllers();
             services.AddSwaggerGen(c =>
             {
