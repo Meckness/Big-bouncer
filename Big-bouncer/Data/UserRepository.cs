@@ -26,16 +26,11 @@ namespace Big_bouncer.Data
         }
         public async ValueTask<EntityEntry<User>> AddUserAsync(User user)
         {
-            return await _applicationDbContext.AddAsync(new User()
-            {
-                Id = new Guid(),
-                Username = user.Username,
-                Password = BCrypt.Net.BCrypt.HashPassword(user.Password)
-            });
+            return await _applicationDbContext.AddAsync(user);
         }
         public void UpdateUser(User user)
         {
-           _applicationDbContext.Entry(user).State = EntityState.Modified;
+            _applicationDbContext.Entry(user).State = EntityState.Modified;
         }
         public void DeleteUser(User user)
         {
@@ -45,7 +40,7 @@ namespace Big_bouncer.Data
         {
             return await _applicationDbContext.Users.AnyAsync(u => u.Username == userClaim.Value);
         }
-        public async void Save()
+        public async Task Save()
         {
             await _applicationDbContext.SaveChangesAsync();
         }

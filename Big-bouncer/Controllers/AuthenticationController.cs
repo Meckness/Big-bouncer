@@ -3,15 +3,12 @@ using Big_bouncer.Models;
 using Big_bouncer.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+using Big_bouncer.BusinessLogic;
 
 namespace Big_bouncer.Controllers
 {
@@ -20,12 +17,12 @@ namespace Big_bouncer.Controllers
     public class AuthenticationController : ControllerBase
     {
         private readonly ITokenBuilder _tokenBuilder;
-        private readonly UserRepository _userRepository;
+        private readonly UserBusinessLogic _userBusinessLogic;
 
-        public AuthenticationController(ITokenBuilder tokenBuilder, UserRepository userRepository)
+        public AuthenticationController(ITokenBuilder tokenBuilder, UserRepository userRepository, UserBusinessLogic userBusinessLogic)
         {
             _tokenBuilder = tokenBuilder;
-            _userRepository = userRepository;
+            _userBusinessLogic = userBusinessLogic;
         }
 
         [HttpPost("Login")]
@@ -33,7 +30,7 @@ namespace Big_bouncer.Controllers
         {
             try
             {
-                var dbUser = await _userRepository.GetUserAsync(user.Username);
+                var dbUser = await _userBusinessLogic.GetUserAsync(user.Username);
 
                 if (dbUser == null)
                 {
@@ -62,22 +59,22 @@ namespace Big_bouncer.Controllers
         {
             try
             {
-                var dbUser = await _userRepository.GetUserAsync(user.Username);
+                var dbUser = await _userBusinessLogic.GetUserAsync(user.Username);
 
                 if(dbUser != null)
                 {
                     return Problem("User with this username already present", null, 501, null, null);
                 }
 
-                EntityEntry<User> userInserted = await _userRepository.AddUserAsync(user);
+                User userInserted = await _userBusinessLogic.AddUserAsync(user);
 
                 if(userInserted == null)
                 {
                     return Problem("An error occured while try to Sign In...");
                 }
-                _userRepository.Save();
-                return Ok(JsonConvert.SerializeObject(user));
 
+                await _userBusinessLogic.Save();
+                return Ok(JsonConvert.SerializeObject(user));
             }
             catch (Exception ex)
             {
@@ -98,7 +95,7 @@ namespace Big_bouncer.Controllers
                 return Unauthorized();
             }
 
-            var userExists = await _userRepository.VerifyUserExistance(userClaim);
+            var userExists = await _userBusinessLogic.VerifyUserExistance(userClaim);
 
             if (!userExists)
             {

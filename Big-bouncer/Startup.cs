@@ -1,3 +1,4 @@
+using Big_bouncer.BusinessLogic;
 using Big_bouncer.Data;
 using Big_bouncer.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -60,6 +61,7 @@ namespace Big_bouncer
 
             services.AddScoped<ITokenBuilder, TokenBuilder>();
             services.AddScoped<UserRepository, UserRepository>();
+            services.AddScoped<UserBusinessLogic, UserBusinessLogic>();
             services.AddControllers();
             services.AddSwaggerGen(c =>
             {
